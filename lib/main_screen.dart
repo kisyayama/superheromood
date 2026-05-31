@@ -60,6 +60,7 @@ class _MainScreenState extends State<MainScreen> {
                       IconButton(
                         iconSize: 35.0,
                         icon: const Icon(Icons.settings),
+                        tooltip: 'Set Profile Name',
                         onPressed: () {
                           // Nanti dihubungkan ke Bagian 5
                         },
@@ -68,6 +69,7 @@ class _MainScreenState extends State<MainScreen> {
                       IconButton(
                         iconSize: 35.0,
                         icon: const Icon(Icons.person_add),
+                        tooltip: 'Create Moods',
                         onPressed: () {
                           // Nanti dihubungkan ke Bagian 2 & 3
                         },
@@ -76,6 +78,7 @@ class _MainScreenState extends State<MainScreen> {
                       IconButton(
                         iconSize: 35.0,
                         icon: const Icon(Icons.power_settings_new),
+                        tooltip: 'Log Out',
                         onPressed: () {
                           // Nanti dihubungkan ke Firebase Auth di Bagian 4
                         },
