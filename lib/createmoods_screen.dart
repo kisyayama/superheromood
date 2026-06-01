@@ -1,6 +1,8 @@
+// lib/createmoods_screen.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'model/herodata.dart'; // Mengimport model herodata.dart sesuai modul
 
 class CreateMoodsScreen extends StatefulWidget {
   static const String id = 'createmoods_screen';
@@ -11,115 +13,101 @@ class CreateMoodsScreen extends StatefulWidget {
 }
 
 class _CreateMoodsScreenState extends State<CreateMoodsScreen> {
-  final TextEditingController _searchController = TextEditingController();
+  // Mengubah method getData() sesuai poin 10 & 12 di modul
+  Future<HeroData> getData() async {
+    final response = await http.get(
+      Uri.parse(
+        'https://www.superheroapi.com/api.php/14ed2a61c0214da630efdb28fbc9be9b/search/batman',
+      ),
+    );
 
-  String? heroName;
-  String? heroImageUrl;
-  bool isLoading = false;
-
-  // FUNGSI API: Menembak data menggunakan token pribadi GitHub Kisya
-  Future<void> searchSuperhero(String name) async {
-    setState(() {
-      isLoading = true;
-    });
-
-    // Menggunakan token pribadi milik Kisya yang valid
-    final String url =
-        'https://superheroapi.com/api/14ed2a61c0214da630efdb28fbc9be9b/search/$name';
-
-    try {
-      final response = await http.get(Uri.parse(url));
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-
-        if (data['response'] == 'success') {
-          setState(() {
-            heroName = data['results'][0]['name'];
-            heroImageUrl = data['results'][0]['image']['url'];
-            isLoading = false;
-          });
-        } else {
-          showSnackbar('Superhero tidak ditemukan!');
-          setState(() => isLoading = false);
-        }
-      } else {
-        showSnackbar('Gagal terhubung ke server API.');
-        setState(() => isLoading = false);
-      }
-    } catch (e) {
-      showSnackbar('Terjadi kesalahan jaringan.');
-      setState(() => isLoading = false);
+    if (response.statusCode == 200) {
+      // Mengembalikan objek HeroData hasil decode JSON (Poin 12)
+      return HeroData.fromJson(jsonDecode(response.body));
+    } else {
+      throw Exception('Failed to load HeroData');
     }
-  }
-
-  void showSnackbar(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Cari SuperHero')),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        key: const Key(
-          'Form_CreateMoods',
-        ), // Key validasi sesuai standar modul tugas
-        child: Column(
-          children: [
-            // Kolom Input Pencarian
-            TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                labelText: 'Masukkan Nama Superhero',
-                hintText: 'Contoh: Batman, Spiderman, Iron Man',
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.search),
-                  onPressed: () {
-                    if (_searchController.text.isNotEmpty) {
-                      searchSuperhero(_searchController.text.trim());
-                    }
-                  },
-                ),
-                border: const OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 30.0),
+      // Menggunakan FutureBuilder sesuai poin 14 & 19 di modul
+      body: FutureBuilder<HeroData>(
+        future: getData(), // Mengarah ke fungsi getData() (Poin 16)
+        builder: (context, AsyncSnapshot<HeroData> snapshot) {
+          // Validasi jika data dari API sudah masuk (Poin 20)
+          if (snapshot.hasData) {
+            // Mereturn ListView.builder sesuai poin 21-25 di modul
+            return ListView.builder(
+              itemCount: snapshot
+                  .data
+                  ?.results
+                  ?.length, // Mengambil panjang array results (Poin 22)
+              itemBuilder: (context, index) {
+                // Menyimpan data per baris berdasarkan index ke variabel heroesData (Poin 24)
+                var heroesData = snapshot.data!.results![index];
 
-            // Tampilan Hasil
-            isLoading
-                ? const CircularProgressIndicator()
-                : heroName != null
-                ? Column(
-                    children: [
-                      Text(
-                        'Hasil: $heroName',
-                        style: const TextStyle(
-                          fontSize: 18.0,
-                          fontWeight: FontWeight.bold,
+                return Column(
+                  children: [
+                    InkWell(
+                      onTap:
+                          null, // Diberi null terlebih dahulu sesuai poin 26 di modul
+                      child: Card(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 20.0),
+                          height: 300.0,
+                          alignment: Alignment.centerLeft,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              // Menampilkan gambar superhero dari properti img (Poin 25)
+                              heroesData.img != null
+                                  ? Image.network(
+                                      heroesData.img!,
+                                      width: 150,
+                                      height: 250,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : const Icon(Icons.broken_image, size: 50),
+                              // Menampilkan nama superhero dari properti name (Poin 25)
+                              Text(
+                                heroesData.name!,
+                                style: const TextStyle(
+                                  fontSize: 20.0,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 10.0),
-                      heroImageUrl != null
-                          ? Image.network(
-                              heroImageUrl!,
-                              height: 200,
-                              errorBuilder: (context, error, stackTrace) {
-                                // Mengantisipasi masalah CORS jika dijalankan di Flutter Web Chrome
-                                return const Icon(
-                                  Icons.broken_image,
-                                  size: 100,
-                                );
-                              },
-                            )
-                          : const SizedBox(),
-                    ],
-                  )
-                : const Text('Silakan cari superhero kamu terlebih dahulu.'),
-          ],
+                    ),
+                  ],
+                );
+              },
+            );
+          } else {
+            // Menampilkan indikator loading jika data belum siap (Poin 27)
+            return const Center(child: CircularProgressIndicator());
+          }
+        },
+      ),
+      // Menambahkan komponen bottomSheet di Scaffold sesuai poin 28 di modul
+      bottomSheet: Card(
+        child: ListTile(
+          leading: const Text(
+            'Moods',
+            style: TextStyle(fontWeight: FontWeight.w700),
+          ),
+          title: const TextField(),
+          trailing: IconButton(
+            icon: const Icon(Icons.send),
+            onPressed: () {
+              Navigator.pop(context);
+            },
+          ),
         ),
       ),
     );
